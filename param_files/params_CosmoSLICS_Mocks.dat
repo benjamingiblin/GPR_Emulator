@@ -1,0 +1,139 @@
+# Parameter file for input to GPR_Emulator_Tool.py
+
+# --------------------------------------------------------------------- TRAINING SET ------------------------------------------------------------------------------
+
+NumNodes = 26																			# No. of nodes in training set
+
+TrainFile = Training_Set/cosmoSLICS_Mocks/Logxi_pm/KiDS_Bins/Logxi_p_zKiDS_CosmolXXXX_ZBcutKV450_SNNone.dat			
+																						# General Filename of training set predictions 
+																						# with 'XXXX' replacing the ID of the separate predictions
+
+TrainIDs = range(0,26)																	# ID numbers to replace 'XXXX'. 
+																						# If IDs are not numbers, or not sequential, put list here.
+																						# e.g. ['a','b','c'], [1,3,5,7,9,11,...]
+
+TrainPredCols = [0,1]																	# [OPTIONAL} If specified: Which 2 columns to read in TrainFile 
+																						# Assumed order: [x_col,y_col]. Else assumes x_col=0, y_col=1
+
+TrainNodesFile = Training_Set/Cosmologies/cosmoSLICS_Cosmologies_Omm_S8_h_w0_sigma8.dat		
+																						# File for coords (nodes) of the training set in the NDim -dimensional parameter space.
+																						# Assumes each row is different node, columns are the different dimensions
+
+TrainNodeCols = [0,1,2,3]																# [OPTIONAL]: If specified, will only use certain columns of TrainNodesFile. 
+																						# Else will use all. Should be of form [0,1,2] (for example)
+
+Train_Error = True																		# If True, will read in errors (see variables defined below this)
+																						# If False, will assume ~0 error on training set
+
+Cov_Error = False																		# If you have covariance matri(x/ces) for the error on Training Set, set this to True
+
+TrainErrFile = Training_Set/cosmoSLICS_Mocks/Logxi_pm/KiDS_Bins/MeanErr_Logxi_p_zKiDS_CosmolXXXX_ZBcutKV450_SNNone.dat
+
+TrainPredErrCol = 1																		# [OPTIONAL} If specified & if Cov_Error is False, this is the column
+																						# in TrainErrPred which is read to get the error. Default is 1 (2nd column)
+
+
+alpha = None																			# Noise term. Const value added to diagonal of kernel in Scikit-learn. 
+																						# If set, this is used INSTEAD of errors in TrainErrFile
+
+																						# The address of the file describing error on training set.
+																						# If Cov_Error is True then this file should be a matrix. 
+																						# If False, it is assumed to be a file containing [x_values, standard_deviations] (2 columns)
+																						# If the error varies for each node of Training set, this file should have 'XXXX'
+																						# in the name, in lieu of the ID the error corresponds to, just like TrainFile variable.
+
+Scale_Nodes = False																		# Scale the training nodes to be in range [0,1]. 
+																						# If True it will scale Trial Nodes by the range of the Training Nodes.
+
+
+
+# --------------------------------------------------------------------- TRAINING SET ------------------------------------------------------------------------------
+
+
+# --------------------------------------------------------------------- TRIAL SET ------------------------------------------------------------------------------
+Run_Trial = True																		# Make predictions for a Trial set (True/False)
+
+
+TrialFile = Trial_Set/Logxi_pm/Nicaea_Bins/Logxi_p_smith03_revised_zKiDS_CosmolXXXXof100_ZBcutKV450_Seed1_CPNtrain25
+																						# General Filename for the prediction you want to test accuracy of emulator against
+																						# IF >1 trial predictions, put 'XXXX' replacing ID of prediction in TrialFile
+																						# and specify IDs with TrialIDs variable
+
+TrialIDs = range(0,100)																	# [OPTIONAL]: No need to specify if only testing one Trial prediction
+																						# else, e.g. range(start,end), ['X','Y','Z'], [2,4,6,8,10,...]
+
+TrialPredCols = [0,1]																	# [OPTIONAL} If specified: Which 2 columns to read in TrialFile 
+																						# Assumed order: [x_col,y_col]. Else assumes x_col=0, y_col=1
+
+TrialNodesFile = Trial_Set/Cosmologies/Trial_Cosmologies_Omm_S8_h_w0_sigma8.dat			# Nodes of trail cosmologies: assumes each row a different node.
+
+TrialNodeCols = [0,1,2,3]																# [OPTIONAL]: If specified, will only use certain columns of TrialNodesFile. 
+																						# Else will use all. Should be of form [0,1,2] (for example)
+
+savedirectory = 																		# [OPTIONAL]: a directory in which output of GP is saved.
+																						# If it doesn't exist it will be created.
+																						# If left blank, savedirectory will be made inside TrialFile directory
+
+# --------------------------------------------------------------------- TRIAL SET ------------------------------------------------------------------------------
+
+
+
+# --------------------------------------------------------------------- PCA ------------------------------------------------------------------------------
+Perform_PCA = True																		# Perform a PCA on the training set and emulate for weights of basis functions
+																						# rather than the statistic itself.
+n_components = 9																		# No. of basis functions to use if Perform_PCA is True	
+	
+BFsFile = 																				# [OPTIONAL]: If specified, PCA will use basis functions saved in this file,
+																						# instead of calculating them from the Training set.
+																						# Assumes each row of this file is different basis function. No. rows defines n_componets.
+
+BFDataMean = 																			# [OPTIONAL]: Filename. If providing Basis Functions, you must also provide the mean (in each bin)
+																						# Of the data from which the basis functions were identified. 
+																						# Assumes input file is formatted [bin_values, Mean] as columns
+
+# --------------------------------------------------------------------- PCA ------------------------------------------------------------------------------
+
+
+
+
+
+# ------------------------------------------------------------------------------ Extra choices ------------------------------------------------------------------------------
+Include_x = False																		# If True, the x-coord corresponding to the statistic being emulated is used 
+																						# as an extra dimension in the emulator. This means each x-coord will be treated
+																						# as a different training set node, and the training set
+																						# will increase in size by a factor len(x)
+																						# If Perform_PCA is True, then x in this case is the basis function index [0,n_componets]
+																						
+
+MCMC_HPs = False																		# If True, an MCMC will be ran to infer the best choice of hyperparameters in the emulation
+																						# These will likely change with the training set, dimensionality, and statistic one is predicting
+
+Cross_Val = True 																		# Perform "Leave-one-out" cross-validation to test performance of accuracy of emulator
+
+# ------------------------------------------------------------------------------ Extra choices ------------------------------------------------------------------------------
+
+
+
+
+
+
+# --------------------------------------------------------------------- GPR ------------------------------------------------------------------------------
+n_restarts_optimizer = 20															# [OPTIONAL]: If set to None then emulator won't train and will just use HPs for
+																					# kernel hyperparameters. Else if a number, it's the number of times Scikit-Learn
+																					# restarts optimisation for HPs. 20 is a safe estimate I've found.
+
+HPs = [216.09,0.132,0.848,1.13,8.99]												# [OPTIONAL]: If good values of hyperparameters for kernel used in emulator are known,
+																					# specify them here: [a,b,c,..]: dimensionality must match dimensionality of training set + 1.
+																					# The '+1' is for the amplitude of the kernel which must appear in position 0 in array.
+																					# LEAVE NO WHITE SPACE BETWEEN '[' and ']'	
+
+NDim = 4																			# [OPTIONAL]: Dimensionality of Training set nodes.
+																					# If HPs is not set, it will read in this value to know how many dimensions
+																					# It should emulate in
+
+# --------------------------------------------------------------------- GPR ------------------------------------------------------------------------------
+
+
+
+
+
