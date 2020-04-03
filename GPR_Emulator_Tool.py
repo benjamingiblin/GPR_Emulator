@@ -88,13 +88,20 @@ if Run_Trial:
 		# If providing an error, SKL requires you run each x-bin separately:
 		GP_AVOUT = np.zeros([ Trial_Nodes.shape[0], inTrain_Pred.shape[1] ])
 		GP_STDOUT = np.zeros([ Trial_Nodes.shape[0], inTrain_Pred.shape[1] ])	
+		GP_HPs = np.zeros([ inTrain_Pred.shape[1], Trial_Nodes.shape[1]+1 ])
 		for i in range(GP_AVOUT.shape[1]):
-			print "Now on x bin %s of %s" %(i,GP_AVOUT.shape[1])
+			print( "Now on x bin %s of %s" %(i,GP_AVOUT.shape[1]) )
 			GPR_Class = GPR_Emu(Train_Nodes, inTrain_Pred[:,i], inTrain_ErrPred[:,i], Trial_Nodes)
-			GP_AVOUT[:,i], GP_STDOUT[:,i] = GPR_Class.GPRsk(HPs, inTrain_ErrPred[:,i], n_restarts_optimizer)
+			if len(HPs.shape) == 1: 
+				# We do not have individual HPs per bin
+				GP_AVOUT[:,i], GP_STDOUT[:,i], GP_HPs[i,:] = GPR_Class.GPRsk(HPs, inTrain_ErrPred[:,i], n_restarts_optimizer)
+			else:
+				# We DO have individual HPs per bin!
+				GP_AVOUT[:,i], GP_STDOUT[:,i], GP_HPs[i,:] = GPR_Class.GPRsk(HPs[i], inTrain_ErrPred[:,i], n_restarts_optimizer)
+
 	else:
 		GPR_Class = GPR_Emu(Train_Nodes, inTrain_Pred, inTrain_ErrPred, Trial_Nodes)
-		GP_AVOUT, GP_STDOUT = GPR_Class.GPRsk(HPs, alpha, n_restarts_optimizer) 				# with Scikit-Learn	
+		GP_AVOUT, GP_STDOUT, GP_HPs = GPR_Class.GPRsk(HPs, alpha, n_restarts_optimizer) 				# with Scikit-Learn	
 		GP_STDOUT = np.repeat(np.reshape(GP_STDOUT, (-1,1)), GP_AVOUT.shape[1], axis=1)			# SKL only returns 1 error bar per trial here
 																								# stack them to same dimension as predicitons.
 	
@@ -112,6 +119,7 @@ if Run_Trial:
 	np.save(savedir + 'GPPred_' + savename, GP_Pred)
 	np.save(savedir + 'GPAcc_'  + savename, GP_Pred/Trial_Pred)
 	np.savetxt(savedir + 'xArray_' + savename + '.dat', np.c_[Train_x])
+	np.savetxt(savedir + 'GPHPs_' + savename + '.dat', GP_HPs)
 
 	GPsavename = savedir + 'GPPred_' + savename + '.png'
 	# Plot the result
@@ -121,12 +129,13 @@ if Run_Trial:
 if Cross_Val:
 	# Do cross-validation
 	GPR_Class = GPR_Emu(Train_Nodes, inTrain_Pred, inTrain_ErrPred, Trial_Nodes)
-	CV_Pred = GPR_Class.Cross_Validation(HPs, Perform_PCA, n_components, Train_BFs, Train_Pred_Mean, Include_x, Train_x, GI.Train_Error(), alpha, n_restarts_optimizer)
+	CV_Pred, CV_HPs = GPR_Class.Cross_Validation(HPs, Perform_PCA, n_components, Train_BFs, Train_Pred_Mean, Include_x, Train_x, GI.Train_Error(), alpha, n_restarts_optimizer)
 
 	# Save pickled GP predictions & accuracies plus a datafile containing corresponding x-array	
 	np.save(savedir + 'CVPred_' + savename, CV_Pred)
 	np.save(savedir + 'CVAcc_'  + savename, CV_Pred/Train_Pred)
 	np.savetxt(savedir + 'xArray_' + savename + '.dat', np.c_[Train_x])
+	np.savetxt(savedir + 'CVHPs_' + savename + '.dat', np.reshape(CV_HPs, (CV_HPs.shape[0]*CV_HPs.shape[1], CV_HPs.shape[2])) )
 
 	# Stuff for plotting
 	# First show the accuracy of the cross-validation

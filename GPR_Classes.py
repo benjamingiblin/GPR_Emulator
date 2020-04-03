@@ -109,7 +109,7 @@ class Get_Input:
 
 
 	def TrialIDs(self):
-		#print self.paraminput.split('TrialIDs = ')[-1].split(' ')[0].split('\t')[0]
+		#print( self.paraminput.split('TrialIDs = ')[-1].split(' ')[0].split('\t')[0] )
 		try:
 			i = eval(self.paraminput.split('TrialIDs = ')[-1].split(' ')[0].split('\t')[0])	
 		except SyntaxError:
@@ -136,8 +136,8 @@ class Get_Input:
 
 	def savedirectory(self):
 		def Make_TF_the_savedir():
-			print "No save directory specified/not correctly specified (should start with / character)."
-			print "Setting savedirectory up inside trial directory."
+			print( "No save directory specified/not correctly specified (should start with / character).")
+			print( "Setting savedirectory up inside trial directory.")
 			TF = self.paraminput.split('TrialFile = ')[-1].split(' ')[0].split('\n')[0].split('\t')[0]
 			directory = os.path.dirname(os.path.abspath(TF))
 			directory += '/GPPredictions/'
@@ -230,14 +230,23 @@ class Get_Input:
 	
 
 	def HPs(self):
-		try: 
-			h = eval(self.paraminput.split('HPs = ')[-1].split(' ')[0].split('\n')[0].split('\t')[0])
-			h = np.array(h)
-		except SyntaxError:
-			print "Could not interpret input HP array (if there is whitespace, remove this). Continuing with default HPs which may be a poor choice."
-			NDim = self.NDim() + 1 	# Add 1 for amplitude of kernel.
-			NumNodes = self.NumNodes()
-			h = np.log(np.ones(NDim) / NumNodes)
+		HP_File = self.paraminput.split('HP_File = ')[-1].split(' ')[0].split('\n')[0].split('\t')[0]
+		print("HP_File is")
+		print( HP_File )
+		if HP_File != "" and HP_File != '#':
+			# Then read in the values saved to file.
+			h = np.loadtxt( str(HP_File) )
+
+		else:
+			# Use the HP array if it's saved. If not, just create the default HP array of unity values.
+			try: 
+				h = eval(self.paraminput.split('HPs = ')[-1].split(' ')[0].split('\n')[0].split('\t')[0])
+				h = np.array(h)
+			except SyntaxError:
+				print( "Could not interpret input HP array (if there is whitespace, remove this). Setting starting HPs to unity.")
+				NDim = self.NDim() + 1 	# Add 1 for amplitude of kernel.
+				h = np.ones(NDim)
+
 		return h
 
 
@@ -270,7 +279,7 @@ class Get_Input:
 			elif len(tmp.shape) == 3:
 				Train_x = tmp[0,0,:]
 			else:
-				print "Training set contained in input file:\n %s\n Has dimensionality > 3. Too many to handle. Change this!" %TF
+				print( "Training set contained in input file:\n %s\n Has dimensionality > 3. Too many to handle. Change this!" %TF)
 				import sys				
 				sys.exit()
 			#Train_Pred = np.load('%s%s%s' %(TF.split('XXXX')[0],IDs[0],TF.split('XXXX')[1]))[1]
@@ -347,7 +356,7 @@ class Get_Input:
 			elif len(tmp.shape) == 3:
 				Trial_x = tmp[0,0,:]
 			else:
-				print "Trial set contained in input file:\n %s\n Has dimensionality > 3. Too many to handle. Change this!" %TF
+				print( "Trial set contained in input file:\n %s\n Has dimensionality > 3. Too many to handle. Change this!" %TF )
 				import sys				
 				sys.exit()
 			Trial_Pred = np.load(TF)[1]
@@ -397,19 +406,19 @@ class Get_Input:
 			elif len(tmp.shape) == 3:
 				Train_x = tmp[0,0,:]
 			else:
-				print "Training set contained in input file:\n %s\n Has dimensionality > 3. Too many to handle. Change this!" %TF
+				print( "Training set contained in input file:\n %s\n Has dimensionality > 3. Too many to handle. Change this!" %TF )
 				import sys				
 				sys.exit()
 		
 		# ...if not, read in Train_x as first column of first Train prediction file
 		else:					
-			Train_x = np.loadtxt('%s%s%s' %(TF_Train.split('XXXX')[0],IDs[0],TF_Train.split('XXXX')[1]), usecols=(PC[0],), unpack=True) 	# x-coordinate of training set predictions
+			Train_x = np.loadtxt('%s%s%s' %(TF_Train.split('XXXX')[0],IDs_Train[0],TF_Train.split('XXXX')[1]), usecols=(PC[0],), unpack=True) 	# x-coordinate of training set predictions
 																																		# currently assumes all training set predictions
 																																		# defined at same x-coords.
 
 		if TF != "":
 			if np.array_equal(Train_x, Trial_x) == False:
-				print "Interpolating the trial predictions onto the x-array of the training predictions."
+				print( "Interpolating the trial predictions onto the x-array of the training predictions." )
 				Trial_Pred = self.Interpolate_Trial_Onto_Train(Train_x, Trial_x, Trial_Pred)
 				Trial_x = Train_x		
 		else:
@@ -517,7 +526,7 @@ class GPR_Emu:
 		GP_OUT = np.zeros([ iterations, D, L ])	# GP_OUT[i,j,k] = i'th iteration, j'th cosmology, k'th theta bin
 
 		for k in range(L):
-			#print "Generating %s predictions for %s trial cosmologies in bin %s" %(iterations, len(self.nodes_trial), k) 
+			#print( "Generating %s predictions for %s trial cosmologies in bin %s" %(iterations, len(self.nodes_trial), k) )
 			if L == 1:
 				gp.compute(self.nodes_train, self.yerr_train)
 			else:
@@ -539,21 +548,42 @@ class GPR_Emu:
 		
 		kernel = p[0] * RBF(p[1:])
 		if n_restarts_optimizer is not None:
-			print "Optimising the emulator with %s restarts..." % n_restarts_optimizer
-		else:
-			print "Not training the emulator, using pre-set hyperparameters."
+			print("Optimising the emulator with %s restarts..." % n_restarts_optimizer)
+		#else:
+			#print("Not training the emulator, using pre-set hyperparameters.")
 
 		if alpha is not None:
 			gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=n_restarts_optimizer, alpha=alpha)		
 		else:
 			gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=n_restarts_optimizer)
 		gp.fit(self.nodes_train, self.y_train)
-		print "Right, we're running emulator with kernel hyperparameters:"
-		print gp.kernel_
+		#print("Right, we're running emulator with kernel hyperparameters:")
+		#print(gp.kernel_)
 		GP_AVOUT, GP_STDOUT = gp.predict(self.nodes_trial, return_std=True)
-		return GP_AVOUT, GP_STDOUT
+		
+		# -------------------------------------------------------------------------
+		# THIS BIT OF CODE EXTRACTED MANY SAMPLES FROM THE GP SO THE USER CAN CALC
+		# THE FULL COVARIANCE OF THE PREDICTIONS. IT IS SLOW AND CAUSES DIMENSIONALITY
+		# PROBLEMS WHEN RAN WITH Train_Error SET TO True .
 
+		#Get_Samples = False
+		#n_samples = 10
+		#if Get_Samples:		
+			# Get many samples of the prediction and return these to estimate the full 
+			# covariance of the samples.
+		#	GP_SAMPLES = gp.sample_y(self.nodes_trial, n_samples=n_samples, random_state=0)
+		#else:
+		#	GP_SAMPLES = np.zeros([ GP_AVOUT.shape[0], GP_AVOUT.shape[1], n_samples ])
 
+		#return GP_AVOUT, GP_STDOUT, GP_SAMPLES, self.Process_gpkernel(gp.kernel_)
+		# -------------------------------------------------------------------------
+
+		return GP_AVOUT, GP_STDOUT, self.Process_gpkernel(gp.kernel_)
+
+	def Process_gpkernel(self, gpkernel):
+		hp_amp = eval( str(gpkernel).split()[0] )
+		hp_rest = eval( str(gpkernel).split('length_scale=')[-1].split(')')[0] ) 
+		return np.append( hp_amp, hp_rest ) 
 
 	def Cross_Validation(self, HPs, Perform_PCA, n_components, Train_BFs, Mean_TS, Include_x, x_coord, Train_Error, alpha, n_restarts_optimizer):
 		import time
@@ -572,10 +602,10 @@ class GPR_Emu:
 			Predictions = np.empty_like( self.y_train )
 			rel_length = len(x_coord)								# the length of the statistic predicted
 
-		
+		GP_HPs_AllNodes = np.zeros([ NumNodes, Predictions.shape[1], self.nodes_train.shape[1]+1 ])
 		for i in range(NumNodes):
 	
-			print "Performing cross-val. for node %s of %s..." %(i, NumNodes)
+			print( "Performing cross-val. for node %s of %s..." %(i, NumNodes) )
 			if Include_x: 
 				new_nodes_trial = self.nodes_train[i*rel_length:(i+1)*rel_length,:]
 				new_y_trial = self.y_train[i*rel_length:(i+1)*rel_length,:]
@@ -584,7 +614,7 @@ class GPR_Emu:
 				new_yerr_train = np.delete(self.yerr_train, slice(i*rel_length, (i+1)*rel_length), axis=0)
 			else:
 				new_nodes_trial  = self.nodes_train[i,:].reshape((1,len(self.nodes_train[i,:])))
-				#print self.y_train.shape
+				#print( self.y_train.shape )
 				new_y_trial = self.y_train[i,:]
 				new_nodes_train = np.delete(self.nodes_train, i, axis=0)
 				new_y_train = np.delete(self.y_train, i, axis=0)
@@ -593,14 +623,19 @@ class GPR_Emu:
 			if Train_Error:
 				# If providing an error, SKL requires you run each x-bin separately:
 				GP_AVOUT = np.zeros([ new_nodes_trial.shape[0], new_y_train.shape[1] ])
-				GP_STDOUT = np.zeros([ new_nodes_trial.shape[0], new_y_train.shape[1] ])	
+				GP_STDOUT = np.zeros([ new_nodes_trial.shape[0], new_y_train.shape[1] ])
 				for j in range(GP_AVOUT.shape[1]):
 					new_GPR_Class = GPR_Emu(new_nodes_train, new_y_train[:,j], new_yerr_train[:,j], new_nodes_trial)
-					GP_AVOUT[:,j], GP_STDOUT[:,j] = new_GPR_Class.GPRsk(HPs, new_yerr_train[:,j], n_restarts_optimizer)
+					if len(HPs.shape) == 1: 
+						# We do not have individual HPs per bin
+						GP_AVOUT[:,j], GP_STDOUT[:,j], GP_HPs_AllNodes[i,j,:] = new_GPR_Class.GPRsk(HPs, new_yerr_train[:,j], n_restarts_optimizer)
+					else:
+						# We do have individual HPs per bin!
+						GP_AVOUT[:,j], GP_STDOUT[:,j], GP_HPs_AllNodes[i,j,:] = new_GPR_Class.GPRsk(HPs[j], new_yerr_train[:,j], n_restarts_optimizer)
 
 			else:
 				new_GPR_Class = GPR_Emu(new_nodes_train, new_y_train, alpha, new_nodes_trial)				
-				GP_AVOUT, GP_STDOUT = new_GPR_Class.GPRsk(HPs, alpha, n_restarts_optimizer) 				# with Scikit-Learn	
+				GP_AVOUT, GP_STDOUT, GP_HPs_AllNodes[i,:,:] = new_GPR_Class.GPRsk(HPs, alpha, n_restarts_optimizer) 				# with Scikit-Learn	
 				GP_STDOUT = np.repeat(np.reshape(GP_STDOUT, (-1,1)), GP_AVOUT.shape[1], axis=1)				# SKL only returns 1 error bar per trial here
 		
 
@@ -616,9 +651,9 @@ class GPR_Emu:
 					Predictions[i,:] = GP_AVOUT
 
 		t2 = time.time()
-		print "Whole cross-val. took %.1f s for %i nodes..." %((t2-t1), NumNodes)
+		print( "Whole cross-val. took %.1f s for %i nodes..." %((t2-t1), NumNodes) )
 
-		return Predictions
+		return Predictions, GP_HPs_AllNodes
 
 
 
@@ -667,12 +702,12 @@ class GPR_Emu:
 		sampler = emcee.EnsembleSampler(nwalkers, ndim, self.lnprob, args=[y_trial, lnprior_ranges])
 
 		t0 = time.time()
-		print "Running burn in of %s steps per walker...." %burn_steps
+		print( "Running burn in of %s steps per walker...." %burn_steps )
 		p0,lnp, _ = sampler.run_mcmc(p0, burn_steps)
 		sampler.reset()
 
 		t1 = time.time()
-		print "First burn-in took %.1f minutes. Running 2nd burn-in..." %((t1-t0)/60.)
+		print( "First burn-in took %.1f minutes. Running 2nd burn-in..." %((t1-t0)/60.) )
 		# set new start point to be a tiny gauss ball around position of whatever walker reached max posterior during burn-in
 		p = p0[np.argmax(lnp)]
 		p0 = [p + 1.e-2* p * np.random.randn(ndim) for i in xrange(nwalkers)]
@@ -680,14 +715,14 @@ class GPR_Emu:
 		sampler.reset()
 
 		t2 = time.time()
-		print "Second burn-in took %.1f minutes. Running the MCMC proper with %s steps per walker" %(((t2-t1)/60.), real_steps)
+		print( "Second burn-in took %.1f minutes. Running the MCMC proper with %s steps per walker" %(((t2-t1)/60.), real_steps) )
 		sampler.run_mcmc(p0, real_steps)
 		# sampler has an attribute called chain that is 3D: nwalkers * real_steps * ndim in dimensionality
 		# Following line turns it into 2D: (nwalkers*real_steps) * ndim. 
 		# As if there was only one walker.
 		samples = sampler.chain[:, :, :].reshape((-1, ndim))
 		t3 = time.time()
-		print "Finished. Main MCMC took %.1f minutes. The whole MCMC took %.1f minutes." %( ((t3-t2)/60.), ((t3-t0)/60.) )
+		print( "Finished. Main MCMC took %.1f minutes. The whole MCMC took %.1f minutes." %( ((t3-t2)/60.), ((t3-t0)/60.) ) )
 
 		return samples
 
@@ -711,7 +746,7 @@ class Diagnostic_Plots:
 
 	# Following are diagnostic plots to access accuracy of emulator
 	def Plot_GPvsTrial(self, savename):
-	 	FD, errFD = self.errRatio( self.y_GP, self.yerr_GP, self.y_compare, self.yerr_compare ) 
+		FD, errFD = self.errRatio( self.y_GP, self.yerr_GP, self.y_compare, self.yerr_compare ) 
 		plt.figure()
 		for i in range(FD.shape[0]):
 			plt.errorbar( self.x, FD[i,:], yerr=errFD[i,:] )
@@ -721,8 +756,8 @@ class Diagnostic_Plots:
 		plt.ylim([FD.min(), FD.max()])
 		plt.xlabel(r'$x$')
 		plt.ylabel(r'(GP - Data) / Data')
-		plt.savefig(savename)
-		plt.show()
+		#plt.savefig(savename)
+		#plt.show()
 		return
 
 

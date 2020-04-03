@@ -122,7 +122,16 @@ n_restarts_optimizer = 20															# [OPTIONAL]: If set to None then emulat
 																					# kernel hyperparameters. Else if a number, it's the number of times Scikit-Learn
 																					# restarts optimisation for HPs. 20 is a safe estimate I've found.
 
-HPs = [216.09,0.132,0.848,1.13,8.99]												# [OPTIONAL]: If good values of hyperparameters for kernel used in emulator are known,
+HP_File = 
+																			# [OPTIONAL]: If specified, it reads the hyperparameters saved in this ASCII file.
+																					# This file should be made simply with 'np.savetxt(GP_HPs, HP_File)'
+																					# FORMAT: Each column is a HP dimension (NDim+1 of these).
+																					# If you've included a Train_Err file, then each row of this HP_File
+																					# should be the HPs per x-bin. Otherwise there should be only one row. 
+ 																					# If HP_File not specified, it reads the values saved in HPs instead.
+
+
+HPs = [0.334083,0.264,0.242,0.25,1.58]												# [OPTIONAL]: If good values of hyperparameters for kernel used in emulator are known,
 																					# specify them here: [a,b,c,..]: dimensionality must match dimensionality of training set + 1.
 																					# The '+1' is for the amplitude of the kernel which must appear in position 0 in array.
 																					# LEAVE NO WHITE SPACE BETWEEN '[' and ']'	
