@@ -231,11 +231,10 @@ class Get_Input:
 
 	def HPs(self):
 		HP_File = self.paraminput.split('HP_File = ')[-1].split(' ')[0].split('\n')[0].split('\t')[0]
-		print("HP_File is")
-		print( HP_File )
+		#print("HP_File is", HP_File )
 		if HP_File != "" and HP_File != '#':
 			# Then read in the values saved to file.
-			h = np.loadtxt( str(HP_File) )
+			h = np.loadtxt( HP_File )
 
 		else:
 			# Use the HP array if it's saved. If not, just create the default HP array of unity values.
