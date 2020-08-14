@@ -2,10 +2,17 @@ import numpy as np
 import pylab as plt
 import os
 from matplotlib import rc
-rc('text',usetex=True)
-rc('font',size=20) 
-rc('legend',**{'fontsize':20}) #30
-rc('font',**{'family':'serif','serif':['Computer Modern']})
+from matplotlib import rcParams
+
+# Some lines just to make nice plot fonts
+rcParams['ps.useafm'] = True
+rcParams['pdf.use14corefonts'] = True
+font = {'family' : 'serif',
+        'weight' : 'normal',
+        'size'   : 10}
+plt.rc('font', **font)
+plt.rcParams["mathtext.fontset"] = "cm"
+
 
 # For doing Gaussian processes with SK-learn
 from sklearn.gaussian_process.kernels import RBF
@@ -51,7 +58,7 @@ class Get_Input:
 
 	def TrainNodeCols(self): 
 		try:
-			return eval(self.paraminput.split('TrialNodeCols = ')[-1].split(' ')[0].split('\n')[0].split('\t')[0])	
+			return eval(self.paraminput.split('TrainNodeCols = ')[-1].split(' ')[0].split('\n')[0].split('\t')[0])	
 		except SyntaxError:
 			return None
 
@@ -784,7 +791,7 @@ class Diagnostic_Plots:
 
 	def Plot_CV_Inacc(self,coords,threshold,labels,limits,savename):
 		import matplotlib.gridspec as gridspec
-		if labels == None or len(labels) != coords.shape[0]:
+		if labels == None or len(labels) != coords.shape[1]:
 			new_labels = []
 			for i in range(coords.shape[0]):
 				new_labels.append('X%s'%i)
@@ -827,19 +834,20 @@ class Diagnostic_Plots:
 							ax1.set_ylim([ limits[0]*coords[:,l].min(),limits[1]*coords[:,l].max() ]) 
 						else:
 							ax1.set_xlim([ limits[j][0],limits[j][1] ]) 
-							ax1.set_ylim([ limits[l][0],limits[l][1] ]) 
-
+							ax1.set_ylim([ limits[l][0],limits[l][1] ])
+                                                        
+                                        # If the axes tick labels are too busy, uncomment the following!:
 					# Set every other x/y-tick to be invisible
-					if len(ax1.get_xticklabels()) > 5: # Too many things will plot on x-axis, 
+					#if len(ax1.get_xticklabels()) > 5: # Too many things will plot on x-axis, 
 													# so only plot every third 
-						for thing in ax1.get_xticklabels():
-							if thing not in ax1.get_xticklabels()[::3]:
-								thing.set_visible(False)
-					else: 
-						for thing in ax1.get_xticklabels()[::2]:
-							thing.set_visible(False)
-					for thing in ax1.get_yticklabels()[::2]:
-						thing.set_visible(False)
+					#	for thing in ax1.get_xticklabels():
+					#		if thing not in ax1.get_xticklabels()[::3]:
+					#			thing.set_visible(False)
+					#else: 
+					#	for thing in ax1.get_xticklabels()[::2]:
+					#		thing.set_visible(False)
+					#for thing in ax1.get_yticklabels()[::2]:
+					#	thing.set_visible(False)
 
 				
 					# Get rid of x/y ticks completely for subplots not at the edge
@@ -852,7 +860,7 @@ class Diagnostic_Plots:
 					else:				
 						ax1.set_xticks([])
 				p+=1
-		fig.suptitle(r'Training nodes for which mean accuracy worse than %s per cent (red points)' %threshold)
+		fig.suptitle(r'Training nodes for which mean accuracy worse than %s per cent (coloured points)' %threshold)
 		plt.savefig(savename)
 		plt.show()
 		return
