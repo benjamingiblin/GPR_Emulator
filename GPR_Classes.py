@@ -262,6 +262,15 @@ class Get_Input:
 
 
 	# --------------------------------------------------------------------- LOAD TRAINING SET ------------------------------------------------------------------------------
+	def Fix_Single_Elem(self, a):
+		# These lines avoid an error if a is only 1 element long and you try to take the length of it:
+		try: 
+			tmp = len(a) 
+		except TypeError: 
+			a = np.array([a]) 
+		return a
+
+
 	def Load_Training_Set(self):
 		TF = self.TrainFile()		# Training Filename	(single string)
 		IDs = self.TrainIDs()		# IDs of training sets (array)
@@ -295,6 +304,7 @@ class Get_Input:
 			Train_x = np.loadtxt('%s%s%s' %(TF.split('XXXX')[0],IDs[0],TF.split('XXXX')[1]), usecols=(PC[0],), unpack=True) 	# x-coordinate of training set predictions
 																															# currently assumes all training set predictions
 																															# defined at same x-coords.
+			Train_x = self.Fix_Single_Elem(Train_x)
 			Train_Pred = np.empty([len(IDs), len(Train_x)])
 			for i in range(len(IDs)):
 				Train_Pred[i,:] = np.loadtxt('%s%s%s' %(TF.split('XXXX')[0],IDs[i],TF.split('XXXX')[1]), usecols=(PC[1],), unpack=True) 
@@ -377,17 +387,20 @@ class Get_Input:
 				Trial_x = np.loadtxt('%s%s%s' %(TF.split('XXXX')[0],IDs[0],TF.split('XXXX')[1]), usecols=(PC[0],), unpack=True) 	# x-coordinate of training set predictions
 																																	# currently assumes all trial set predictions
 																																	# defined at same x-coords.
+				# Avoids an error if Trial_x is only 1 element long.
+				Trial_x = self.Fix_Single_Elem(Trial_x)
 				Trial_Pred = np.empty([len(IDs), len(Trial_x)])
 				for i in range(len(IDs)):
 					Trial_Pred[i,:] = np.loadtxt('%s%s%s' %(TF.split('XXXX')[0],IDs[i],TF.split('XXXX')[1]), usecols=(PC[1],), unpack=True)
 			elif TF == "":
-				Trial_Nodes = Trial_Nodes.transpose()
+				Trial_Nodes = np.reshape( Trial_Nodes, (1,len(Trial_Nodes)) ) #Trial_Nodes.transpose()
 				Trial_x = None
 				# Do not read in trials as none are specified.
 
 			else:
 				Trial_Nodes = np.reshape( Trial_Nodes, (1,len(Trial_Nodes)) )
-				Trial_x, Trial_Pred = np.loadtxt(TF, usecols=PC, unpack=True)		
+				Trial_x, Trial_Pred = np.loadtxt(TF, usecols=PC, unpack=True)	
+				Trial_x = self.Fix_Single_Elem(Trial_x)	
 				Trial_Pred = np.reshape( Trial_Pred, (1,len(Trial_Pred)) )
 
 		if SN:
@@ -415,12 +428,14 @@ class Get_Input:
 				print( "Training set contained in input file:\n %s\n Has dimensionality > 3. Too many to handle. Change this!" %TF )
 				import sys				
 				sys.exit()
-		
+			Train_x = self.Fix_Single_Elem(Train_x) # Avoids an error if Train_x is 1 element long.
+
 		# ...if not, read in Train_x as first column of first Train prediction file
 		else:					
 			Train_x = np.loadtxt('%s%s%s' %(TF_Train.split('XXXX')[0],IDs_Train[0],TF_Train.split('XXXX')[1]), usecols=(PC[0],), unpack=True) 	# x-coordinate of training set predictions
 																																		# currently assumes all training set predictions
 																																		# defined at same x-coords.
+			Train_x = self.Fix_Single_Elem(Train_x) # Avoids an error if Train_x is 1 element long.
 
 		if TF != "":
 			if np.array_equal(Train_x, Trial_x) == False:
