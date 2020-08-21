@@ -392,15 +392,21 @@ class Get_Input:
 				Trial_Pred = np.empty([len(IDs), len(Trial_x)])
 				for i in range(len(IDs)):
 					Trial_Pred[i,:] = np.loadtxt('%s%s%s' %(TF.split('XXXX')[0],IDs[i],TF.split('XXXX')[1]), usecols=(PC[1],), unpack=True)
-			elif TF == "":
-				Trial_Nodes = np.reshape( Trial_Nodes, (1,len(Trial_Nodes)) ) #Trial_Nodes.transpose()
-				Trial_x = None
-				# Do not read in trials as none are specified.
 
+			elif TF == "":
+				# Do not read in trial predictions as none are specified.
+				Trial_Nodes = Trial_Nodes.transpose()
+				Trial_x = None
+				
 			else:
-				Trial_Nodes = np.reshape( Trial_Nodes, (1,len(Trial_Nodes)) )
+				# There is one single Trial Pred prediction specified.
 				Trial_x, Trial_Pred = np.loadtxt(TF, usecols=PC, unpack=True)	
 				Trial_x = self.Fix_Single_Elem(Trial_x)	
+
+			if len(Trial_Nodes.shape)==1:
+				# If only one trial node specified, reshape the Trial_Nodes and Trial_Pred arrays
+				# to be [1,len(Trial_Nodes)] and [1,len(Trial_Pred)]
+				Trial_Nodes = np.reshape( Trial_Nodes, (1,len(Trial_Nodes)) )
 				Trial_Pred = np.reshape( Trial_Pred, (1,len(Trial_Pred)) )
 
 		if SN:
