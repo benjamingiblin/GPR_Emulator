@@ -402,6 +402,7 @@ class Get_Input:
 				# There is one single Trial Pred prediction specified.
 				Trial_x, Trial_Pred = np.loadtxt(TF, usecols=PC, unpack=True)	
 				Trial_x = self.Fix_Single_Elem(Trial_x)	
+				Trial_Pred = self.Fix_Single_Elem(Trial_Pred)	
 
 			if len(Trial_Nodes.shape)==1:
 				# If only one trial node specified, reshape the Trial_Nodes and Trial_Pred arrays
