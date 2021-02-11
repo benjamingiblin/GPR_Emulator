@@ -7,11 +7,18 @@ import sys
 import os
 import matplotlib
 from matplotlib import rc
+from matplotlib import rcParams
 
-rc('text',usetex=True)
-rc('font',size=18)
-rc('legend',**{'fontsize':14})
-rc('font',**{'family':'serif','serif':['Computer Modern']})
+# Some font setting                                                                                                  
+rcParams['ps.useafm'] = True
+rcParams['pdf.use14corefonts'] = True
+
+font = {'family' : 'serif',
+        'weight' : 'normal',
+        'size'   : 14}
+
+plt.rc('font', **font)
+plt.rcParams["mathtext.fontset"] = "cm"
 
 # For doing Gaussian processes, PCAs and plotting output
 from GPR_Classes import Get_Input, PCA_Class, GPR_Emu, Diagnostic_Plots
@@ -25,7 +32,6 @@ if GI.Run_Trial():
 	Trial_x, Trial_Pred, Trial_Nodes = GI.Load_Trial_Set()					# Trial set
 else:
 	Trial_Nodes = None
-
 
 # Analysis choices
 Run_Trial = GI.Run_Trial()													# Make predictions for a trial set? (T/F)
