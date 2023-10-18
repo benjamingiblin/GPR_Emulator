@@ -107,7 +107,7 @@ Include_x = False																		# If True, the x-coord corresponding to the s
 MCMC_HPs = False																		# If True, an MCMC will be ran to infer the best choice of hyperparameters in the emulation
 																						# These will likely change with the training set, dimensionality, and statistic one is predicting
 
-Cross_Val = False 																		# Perform "Leave-one-out" cross-validation to test performance of accuracy of emulator
+Cross_Val = True 																		# Perform "Leave-one-out" cross-validation to test performance of accuracy of emulator
 
 # ------------------------------------------------------------------------------ Extra choices ------------------------------------------------------------------------------
 

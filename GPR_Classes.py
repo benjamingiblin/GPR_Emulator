@@ -2,10 +2,17 @@ import numpy as np
 import pylab as plt
 import os
 from matplotlib import rc
-rc('text',usetex=True)
-rc('font',size=20) 
-rc('legend',**{'fontsize':20}) #30
-rc('font',**{'family':'serif','serif':['Computer Modern']})
+from matplotlib import rcParams
+
+# Some lines just to make nice plot fonts
+rcParams['ps.useafm'] = True
+rcParams['pdf.use14corefonts'] = True
+font = {'family' : 'serif',
+        'weight' : 'normal',
+        'size'   : 10}
+plt.rc('font', **font)
+plt.rcParams["mathtext.fontset"] = "cm"
+
 
 # For doing Gaussian processes with SK-learn
 from sklearn.gaussian_process.kernels import RBF
@@ -51,7 +58,7 @@ class Get_Input:
 
 	def TrainNodeCols(self): 
 		try:
-			return eval(self.paraminput.split('TrialNodeCols = ')[-1].split(' ')[0].split('\n')[0].split('\t')[0])	
+			return eval(self.paraminput.split('TrainNodeCols = ')[-1].split(' ')[0].split('\n')[0].split('\t')[0])	
 		except SyntaxError:
 			return None
 
@@ -255,6 +262,15 @@ class Get_Input:
 
 
 	# --------------------------------------------------------------------- LOAD TRAINING SET ------------------------------------------------------------------------------
+	def Fix_Single_Elem(self, a):
+		# These lines avoid an error if a is only 1 element long and you try to take the length of it:
+		try: 
+			tmp = len(a) 
+		except TypeError: 
+			a = np.array([a]) 
+		return a
+
+
 	def Load_Training_Set(self):
 		TF = self.TrainFile()		# Training Filename	(single string)
 		IDs = self.TrainIDs()		# IDs of training sets (array)
@@ -288,6 +304,7 @@ class Get_Input:
 			Train_x = np.loadtxt('%s%s%s' %(TF.split('XXXX')[0],IDs[0],TF.split('XXXX')[1]), usecols=(PC[0],), unpack=True) 	# x-coordinate of training set predictions
 																															# currently assumes all training set predictions
 																															# defined at same x-coords.
+			Train_x = self.Fix_Single_Elem(Train_x)
 			Train_Pred = np.empty([len(IDs), len(Train_x)])
 			for i in range(len(IDs)):
 				Train_Pred[i,:] = np.loadtxt('%s%s%s' %(TF.split('XXXX')[0],IDs[i],TF.split('XXXX')[1]), usecols=(PC[1],), unpack=True) 
@@ -370,17 +387,27 @@ class Get_Input:
 				Trial_x = np.loadtxt('%s%s%s' %(TF.split('XXXX')[0],IDs[0],TF.split('XXXX')[1]), usecols=(PC[0],), unpack=True) 	# x-coordinate of training set predictions
 																																	# currently assumes all trial set predictions
 																																	# defined at same x-coords.
+				# Avoids an error if Trial_x is only 1 element long.
+				Trial_x = self.Fix_Single_Elem(Trial_x)
 				Trial_Pred = np.empty([len(IDs), len(Trial_x)])
 				for i in range(len(IDs)):
 					Trial_Pred[i,:] = np.loadtxt('%s%s%s' %(TF.split('XXXX')[0],IDs[i],TF.split('XXXX')[1]), usecols=(PC[1],), unpack=True)
+
 			elif TF == "":
+				# Do not read in trial predictions as none are specified.
 				Trial_Nodes = Trial_Nodes.transpose()
 				Trial_x = None
-				# Do not read in trials as none are specified.
-
+				
 			else:
+				# There is one single Trial Pred prediction specified.
+				Trial_x, Trial_Pred = np.loadtxt(TF, usecols=PC, unpack=True)	
+				Trial_x = self.Fix_Single_Elem(Trial_x)	
+				Trial_Pred = self.Fix_Single_Elem(Trial_Pred)	
+
+			if len(Trial_Nodes.shape)==1:
+				# If only one trial node specified, reshape the Trial_Nodes and Trial_Pred arrays
+				# to be [1,len(Trial_Nodes)] and [1,len(Trial_Pred)]
 				Trial_Nodes = np.reshape( Trial_Nodes, (1,len(Trial_Nodes)) )
-				Trial_x, Trial_Pred = np.loadtxt(TF, usecols=PC, unpack=True)		
 				Trial_Pred = np.reshape( Trial_Pred, (1,len(Trial_Pred)) )
 
 		if SN:
@@ -408,12 +435,14 @@ class Get_Input:
 				print( "Training set contained in input file:\n %s\n Has dimensionality > 3. Too many to handle. Change this!" %TF )
 				import sys				
 				sys.exit()
-		
+			Train_x = self.Fix_Single_Elem(Train_x) # Avoids an error if Train_x is 1 element long.
+
 		# ...if not, read in Train_x as first column of first Train prediction file
 		else:					
 			Train_x = np.loadtxt('%s%s%s' %(TF_Train.split('XXXX')[0],IDs_Train[0],TF_Train.split('XXXX')[1]), usecols=(PC[0],), unpack=True) 	# x-coordinate of training set predictions
 																																		# currently assumes all training set predictions
 																																		# defined at same x-coords.
+			Train_x = self.Fix_Single_Elem(Train_x) # Avoids an error if Train_x is 1 element long.
 
 		if TF != "":
 			if np.array_equal(Train_x, Trial_x) == False:
@@ -748,15 +777,15 @@ class Diagnostic_Plots:
 		FD, errFD = self.errRatio( self.y_GP, self.yerr_GP, self.y_compare, self.yerr_compare ) 
 		plt.figure()
 		for i in range(FD.shape[0]):
-			plt.errorbar( self.x, FD[i,:], yerr=errFD[i,:] )
+			plt.errorbar( self.x, FD[i,:], yerr=abs(errFD[i,:]) )
 		#plt.plot([self.x.min(),self.x.max()], [0.,0.], 'k--')
 		plt.xscale('log')
 		plt.xlim([self.x.min(), self.x.max()])
 		plt.ylim([FD.min(), FD.max()])
 		plt.xlabel(r'$x$')
 		plt.ylabel(r'(GP - Data) / Data')
-		#plt.savefig(savename)
-		#plt.show()
+		plt.savefig(savename)
+		plt.show()
 		return
 
 
@@ -784,7 +813,7 @@ class Diagnostic_Plots:
 
 	def Plot_CV_Inacc(self,coords,threshold,labels,limits,savename):
 		import matplotlib.gridspec as gridspec
-		if labels == None or len(labels) != coords.shape[0]:
+		if labels == None or len(labels) != coords.shape[1]:
 			new_labels = []
 			for i in range(coords.shape[0]):
 				new_labels.append('X%s'%i)
@@ -827,19 +856,20 @@ class Diagnostic_Plots:
 							ax1.set_ylim([ limits[0]*coords[:,l].min(),limits[1]*coords[:,l].max() ]) 
 						else:
 							ax1.set_xlim([ limits[j][0],limits[j][1] ]) 
-							ax1.set_ylim([ limits[l][0],limits[l][1] ]) 
-
+							ax1.set_ylim([ limits[l][0],limits[l][1] ])
+                                                        
+                                        # If the axes tick labels are too busy, uncomment the following!:
 					# Set every other x/y-tick to be invisible
-					if len(ax1.get_xticklabels()) > 5: # Too many things will plot on x-axis, 
+					#if len(ax1.get_xticklabels()) > 5: # Too many things will plot on x-axis, 
 													# so only plot every third 
-						for thing in ax1.get_xticklabels():
-							if thing not in ax1.get_xticklabels()[::3]:
-								thing.set_visible(False)
-					else: 
-						for thing in ax1.get_xticklabels()[::2]:
-							thing.set_visible(False)
-					for thing in ax1.get_yticklabels()[::2]:
-						thing.set_visible(False)
+					#	for thing in ax1.get_xticklabels():
+					#		if thing not in ax1.get_xticklabels()[::3]:
+					#			thing.set_visible(False)
+					#else: 
+					#	for thing in ax1.get_xticklabels()[::2]:
+					#		thing.set_visible(False)
+					#for thing in ax1.get_yticklabels()[::2]:
+					#	thing.set_visible(False)
 
 				
 					# Get rid of x/y ticks completely for subplots not at the edge
@@ -852,7 +882,7 @@ class Diagnostic_Plots:
 					else:				
 						ax1.set_xticks([])
 				p+=1
-		fig.suptitle(r'Training nodes for which mean accuracy worse than %s per cent (red points)' %threshold)
+		fig.suptitle(r'Training nodes for which mean accuracy worse than %s per cent (coloured points)' %threshold)
 		plt.savefig(savename)
 		plt.show()
 		return
